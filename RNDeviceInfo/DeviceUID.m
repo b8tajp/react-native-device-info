@@ -36,6 +36,7 @@
 
 /*! Returns the Device UID.
     The UID is obtained in a chain of fallbacks:
+      - MDM serial number
       - Keychain
       - NSUserDefaults
       - Apple IFV (Identifier for Vendor)
@@ -43,6 +44,7 @@
     At last, the UID is persisted if needed to.
  */
 - (NSString *)uid {
+    if (!_uid) _uid = [DeviceUID valueForUserDefaultsDictionary:@"com.apple.configuration.managed" :@"serial_num"];
     if (!_uid) _uid = [[self class] valueForKeychainKey:_uidKey service:_uidKey];
     if (!_uid) _uid = [[self class] valueForUserDefaultsKey:_uidKey];
     if (!_uid) _uid = [[self class] appleIFV];
@@ -114,6 +116,10 @@
 
 + (NSString *)valueForUserDefaultsKey:(NSString *)key {
     return [[NSUserDefaults standardUserDefaults] objectForKey:key];
+}
+
++ (NSString *)valueForUserDefaultsDictionary:(NSString *)dictionary :(NSString *)key {
+    return [[[NSUserDefaults standardUserDefaults] dictionaryForKey:dictionary] objectForKey:key];
 }
 
 #pragma mark - UID Generation methods
