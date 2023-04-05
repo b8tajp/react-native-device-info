@@ -21,7 +21,13 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.Promise;
 
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
@@ -166,7 +172,7 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
     constants.put("apiLevel", Build.VERSION.SDK_INT);
     constants.put("deviceLocale", this.getCurrentLanguage());
     constants.put("deviceCountry", this.getCurrentCountry());
-    constants.put("uniqueId", getWifiInfo().getMacAddress().replaceAll(":", ""));
+    constants.put("uniqueId", getMacAddrFromInterfaces().replaceAll(":", ""));
     constants.put("systemManufacturer", Build.MANUFACTURER);
     constants.put("bundleId", packageName);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -185,5 +191,33 @@ public class RNDeviceModule extends ReactContextBaseJavaModule {
     }
     constants.put("carrier", this.getCarrier());
     return constants;
+  }
+
+  public String getMacAddrFromInterfaces() {
+    try {
+      List<NetworkInterface> all = Collections.list(NetworkInterface.getNetworkInterfaces());
+      for (NetworkInterface nif : all) {
+        if (!nif.getName().equalsIgnoreCase("wlan0")) continue;
+
+        byte[] macBytes = nif.getHardwareAddress();
+        if (macBytes == null) {
+          return "02:00:00:00:00:00";
+        }
+
+        StringBuilder res1 = new StringBuilder();
+        for (byte b : macBytes) {
+          // res1.append(Integer.toHexString(b & 0xFF) + ":");
+          res1.append(String.format("%02X:",b));
+        }
+
+        if (res1.length() > 0) {
+          res1.deleteCharAt(res1.length() - 1);
+        }
+        return res1.toString();
+      }
+    } catch (Exception ex) {
+      //handle exception
+    }
+    return "02:00:00:00:00:00";
   }
 }
